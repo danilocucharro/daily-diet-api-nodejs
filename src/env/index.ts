@@ -1,28 +1,29 @@
-import { config } from 'dotenv';
-import z from 'zod';
+import { config } from "dotenv";
+import z from "zod";
 
-if(process.env.NODE_ENV === 'test'){
+if (process.env.NODE_ENV === "test") {
   config({
-    path: ".env.test"
-  })
-  console.log("Its Running test environment.")
+    path: ".env.test",
+  });
+  console.log("Its Running test environment.");
 } else {
-  config()
+  config();
 }
 
 // Schema das variaveis de ambiente
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
   DATABASE_URL: z.string(),
-  PORT: z.coerce.number().default(3333)
-})
+  PORT: z.coerce.number().default(3333),
+});
 
-const _env = envSchema.safeParse(process.env)
+// Vai analisar os valores esperados de acordo com o encSchema das variaveis de ambiente
+const _env = envSchema.safeParse(process.env);
 
-if(_env.success === false){
-  console.error('Invalid environment variables', _env.error)
+if (_env.success === false) {
+  console.error("Invalid environment variables", _env.error.format);
 
-  throw new Error('Invalid environment variables.')
+  throw new Error("Invalid environment variables.");
 }
 
-export const env = _env.data
+export const env = _env.data;
