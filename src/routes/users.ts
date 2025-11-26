@@ -14,8 +14,18 @@ export async function usersRoutes(app: FastifyInstance) {
     // Analisa se os dados estao validos de acordo com o schema da requisicao
     const { name, password } = createUserRequestSchema.parse(request.body);
 
+    let sessionId = request.cookies.sessionId;
+
+    if (!sessionId) {
+      sessionId = randomUUID();
+      reply.setCookie("sessionId", sessionId, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
+
     await knexDb("users").insert({
-      id: randomUUID(),
+      id: sessionId,
       name,
       password,
     });
