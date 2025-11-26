@@ -40,10 +40,36 @@ export function mealsRoutes(app: FastifyInstance) {
     });
   });
 
-  app.get("/", async (request) => {
+  // GET List meals
+  app.get("/", async (request, reply) => {
     const { sessionId } = request.cookies;
 
     const meals = await knexDb("meals").where("user_id", sessionId).select();
-    return { meals };
+
+    reply.status(200).send({ meals });
   });
+
+  // GET show a specific meal
+  app.get(
+    "/:id",
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const getMealParamsSchema = z.object({
+        id: z.uuid(),
+      });
+
+      const { id } = getMealParamsSchema.parse(request.params);
+
+      const { sessionId } = request.cookies;
+
+      const meal = await knexDb("meals")
+        .where({
+          id: id,
+          user_id: sessionId!,
+        })
+        .first();
+
+      reply.status(200).send({ meal });
+    }
+  );
 }
