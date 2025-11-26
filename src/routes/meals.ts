@@ -107,4 +107,28 @@ export function mealsRoutes(app: FastifyInstance) {
       });
     }
   );
+
+  // DELETE remove a meal
+  app.delete(
+    "/:id",
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const deleteMealParamsSchema = z.object({
+        id: z.uuid(),
+      });
+
+      const { id } = deleteMealParamsSchema.parse(request.params);
+
+      const { sessionId } = request.cookies;
+
+      await knexDb("meals")
+        .where({
+          id,
+          user_id: sessionId!,
+        })
+        .del();
+
+      reply.status(204);
+    }
+  );
 }
