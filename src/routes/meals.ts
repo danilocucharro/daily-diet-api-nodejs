@@ -36,7 +36,7 @@ export function mealsRoutes(app: FastifyInstance) {
     });
 
     reply.status(201).send({
-      success: "meal created successfully",
+      success: "meal created successfully.",
     });
   });
 
@@ -70,6 +70,41 @@ export function mealsRoutes(app: FastifyInstance) {
         .first();
 
       reply.status(200).send({ meal });
+    }
+  );
+
+  // PUT update a meal info
+  app.put(
+    "/",
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const updateMealRequestSchema = z.object({
+        id: z.uuid(),
+        name: z.string(),
+        description: z.string(),
+        on_diet: z.boolean(),
+      });
+
+      const { id, name, description, on_diet } = updateMealRequestSchema.parse(
+        request.body
+      );
+
+      const { sessionId } = request.cookies;
+
+      await knexDb("meals")
+        .where({
+          id,
+          user_id: sessionId!,
+        })
+        .update({
+          name,
+          description,
+          on_diet,
+        });
+
+      reply.status(200).send({
+        success: "meal updated successfully.",
+      });
     }
   );
 }
