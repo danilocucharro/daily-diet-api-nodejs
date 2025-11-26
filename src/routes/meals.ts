@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import z from "zod";
 import { knexDb } from "../database.js";
 import { randomUUID } from "node:crypto";
+import { checkSessionIdExists } from "../middlewares/check-session-id-exists.js";
 
 export function mealsRoutes(app: FastifyInstance) {
   app.post("/", async (request, reply) => {
@@ -37,5 +38,12 @@ export function mealsRoutes(app: FastifyInstance) {
     reply.status(201).send({
       success: "meal created successfully",
     });
+  });
+
+  app.get("/", async (request) => {
+    const { sessionId } = request.cookies;
+
+    const meals = await knexDb("meals").where("user_id", sessionId).select();
+    return { meals };
   });
 }
