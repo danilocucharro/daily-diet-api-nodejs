@@ -40,19 +40,41 @@ export async function usersRoutes(app: FastifyInstance) {
     "/metrics/total-meals/:user_id",
     { preHandler: [checkSessionIdExists, matchParamAndSessionId] },
     async (request, reply) => {
-      const getTotalMealsParamsSchema = z.object({
+      const getTotalMealsParamSchema = z.object({
         user_id: z.uuid(),
       });
 
-      const { user_id } = getTotalMealsParamsSchema.parse(request.params);
+      const { user_id } = getTotalMealsParamSchema.parse(request.params);
 
       const totalMeals = await knexDb("meals")
         .where({
-          user_id: user_id!,
+          user_id: user_id,
         })
         .count({ totalMeals: "*" });
 
       reply.status(200).send(totalMeals);
+    }
+  );
+
+  // GET total of meals on diet registered
+  app.get(
+    "/metrics/total-on-diet/:user_id",
+    { preHandler: [checkSessionIdExists, matchParamAndSessionId] },
+    async (request, reply) => {
+      const getTotalMealsOnDietParamSchema = z.object({
+        user_id: z.uuid(),
+      });
+
+      const { user_id } = getTotalMealsOnDietParamSchema.parse(request.params);
+
+      const totalOnDietMeals = await knexDb("meals")
+        .where({
+          user_id: user_id,
+          on_diet: true,
+        })
+        .count({ totalMealsOnDiet: "*" });
+
+      reply.status(200).send(totalOnDietMeals);
     }
   );
 }
