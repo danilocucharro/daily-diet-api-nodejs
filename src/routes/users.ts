@@ -77,4 +77,26 @@ export async function usersRoutes(app: FastifyInstance) {
       reply.status(200).send(totalOnDietMeals);
     }
   );
+
+  // GET total of meals off diet registered
+  app.get(
+    "/metrics/total-off-diet/:user_id",
+    { preHandler: [checkSessionIdExists, matchParamAndSessionId] },
+    async (request, reply) => {
+      const getTotalMealsOffDietParamSchema = z.object({
+        user_id: z.uuid(),
+      });
+
+      const { user_id } = getTotalMealsOffDietParamSchema.parse(request.params);
+
+      const totalOffDietMeals = await knexDb("meals")
+        .where({
+          user_id: user_id,
+          on_diet: false,
+        })
+        .count({ totalMealsOffDiet: "*" });
+
+      reply.status(200).send(totalOffDietMeals);
+    }
+  );
 }
