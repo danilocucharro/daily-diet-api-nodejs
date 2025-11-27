@@ -99,4 +99,25 @@ export async function usersRoutes(app: FastifyInstance) {
       reply.status(200).send(totalOffDietMeals);
     }
   );
+
+  // GET best sequence of meals on diet
+  app.get(
+    "/metrics/best-sequence/:user_id",
+    { preHandler: [checkSessionIdExists, matchParamAndSessionId] },
+    async (request, reply) => {
+      const getBestSequenceParamSchema = z.object({
+        user_id: z.uuid(),
+      });
+
+      const { user_id } = getBestSequenceParamSchema.parse(request.params);
+
+      const bestSequence = await knexDb("users")
+        .where({
+          id: user_id,
+        })
+        .select("best_on_diet_meals_sequence");
+
+      reply.status(200).send(bestSequence);
+    }
+  );
 }
