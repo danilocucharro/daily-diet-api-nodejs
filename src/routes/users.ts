@@ -17,6 +17,7 @@ export async function usersRoutes(app: FastifyInstance) {
     const { name, password } = createUserRequestSchema.parse(request.body);
 
     let sessionId = request.cookies.sessionId;
+    let sequenceOnDietMeals = request.cookies.sequenceOnDietMeals;
 
     if (!sessionId) {
       sessionId = randomUUID();
@@ -26,11 +27,21 @@ export async function usersRoutes(app: FastifyInstance) {
       });
     }
 
-    await knexDb("users").insert({
-      id: sessionId,
-      name,
-      password,
-    });
+    if (sequenceOnDietMeals) {
+      await knexDb("users").insert({
+        id: sessionId,
+        name,
+        password,
+        actual_on_diet_meals_sequence: Number(sequenceOnDietMeals),
+        best_on_diet_meals_sequence: Number(sequenceOnDietMeals),
+      });
+    } else {
+      await knexDb("users").insert({
+        id: sessionId,
+        name,
+        password,
+      });
+    }
 
     return reply.status(201).send();
   });

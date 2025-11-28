@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { checkSessionIdExists } from "../middlewares/check-session-id-exists.js";
 
 export function mealsRoutes(app: FastifyInstance) {
+  // POST create a meal
   app.post("/", async (request, reply) => {
     const createMealRequestSchema = z.object({
       name: z.string(),
@@ -18,6 +19,61 @@ export function mealsRoutes(app: FastifyInstance) {
 
     let sessionId = request.cookies.sessionId;
 
+    if (sessionId) {
+      // Verifying if exists an user with this sessionId
+      const userExists =
+        (await knexDb("users").where("id", sessionId)).length > 0;
+
+      if (on_diet && userExists) {
+        const sequenceOnDietMeals = request.cookies.sequenceOnDietMeals;
+        const newSequenceCookieValue = Number(sequenceOnDietMeals) + 1;
+        reply.setCookie("sequenceOnDietMeals", String(newSequenceCookieValue), {
+          path: "/",
+          maxAge: 60 * 60 * 24 * 7,
+        });
+
+        const user = await knexDb("users").where("id", sessionId).select("*");
+
+        const isNewSequencehigher =
+          Number(newSequenceCookieValue) >
+          user[0]?.best_on_diet_meals_sequence!;
+
+        await knexDb("users")
+          .where("id", sessionId)
+          .update(
+            {
+              actual_on_diet_meals_sequence: Number(newSequenceCookieValue),
+              best_on_diet_meals_sequence: isNewSequencehigher
+                ? Number(newSequenceCookieValue)
+                : user[0]?.best_on_diet_meals_sequence!,
+            },
+            ["actual_on_diet_meals_sequence", "best_on_diet_meals_sequence"]
+          );
+      } else if (on_diet && !userExists) {
+        reply.setCookie(
+          "sequenceOnDietMeals",
+          String(Number(request.cookies.sequenceOnDietMeals) + 1),
+          {
+            path: "/",
+            maxAge: 60 * 60 * 24 * 7,
+          }
+        );
+      } else if (!on_diet) {
+        reply.setCookie("sequenceOnDietMeals", "0", {
+          path: "/",
+          maxAge: 60 * 60 * 24 * 7,
+        });
+
+        await knexDb("users").where("id", sessionId).update(
+          {
+            actual_on_diet_meals_sequence: 0,
+          },
+          ["actual_on_diet_meals_sequence"]
+        );
+      }
+    }
+
+    // If dont have a session yet
     if (!sessionId) {
       sessionId = randomUUID();
 
@@ -25,6 +81,18 @@ export function mealsRoutes(app: FastifyInstance) {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
       });
+
+      if (!on_diet) {
+        reply.setCookie("sequenceOnDietMeals", "0", {
+          path: "/",
+          maxAge: 60 * 60 * 24 * 7,
+        });
+      } else {
+        reply.setCookie("sequenceOnDietMeals", "1", {
+          path: "/",
+          maxAge: 60 * 60 * 24 * 7,
+        });
+      }
     }
 
     await knexDb("meals").insert({
